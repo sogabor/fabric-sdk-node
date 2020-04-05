@@ -29,7 +29,6 @@ const http = require('http');
 const testUtil = require('./util.js');
 
 
-// var keyValStorePath = testUtil.KVS;
 const FabricCAServices = require('fabric-ca-client/lib/FabricCAServices');
 const FabricCAClient = require('fabric-ca-client/lib/FabricCAClient');
 
@@ -107,10 +106,8 @@ test('\n\n ** FabricCAServices: Test enroll() With Dynamic CSR **\n\n', (t) => {
 			t.end();
 		}).then(() => {
 
-			// now test being able to save user to persistence store
-			return FabricCAServices.newDefaultKeyValueStore({
-				path: testUtil.KVS
-			});
+			// default keyValueStore is changed to inMemory
+			return FabricCAServices.newDefaultKeyValueStore();
 		}, () => {
 			t.fail('Failed to configure the user with proper enrollment materials.');
 			t.end();
@@ -454,7 +451,7 @@ function getFabricCAService() {
 	FabricCAServices.getConfigSetting('crypto-keysize', '256');// force for npm test
 	FabricCAServices.setConfigSetting('crypto-hash-algo', 'SHA2');// force for npm test
 
-	return new FabricCAServices(fabricCAEndpoint, tlsOptions, ORGS[userOrg].ca.name);
+	return new FabricCAServices(fabricCAEndpoint, tlsOptions, ORGS[userOrg].ca.name, testUtil.newDefaultCryptoSuite());
 }
 
 async function enrollAdminTest(caService, t) {
@@ -484,7 +481,7 @@ async function timeOutTest(signingIdentity, t) {
 	// test CONNECTION_TIMEOUT
 	// Connect to a non-routable IP address should throw error connection_timeout
 	try {
-		const caClient = new FabricCAServices('http://10.255.255.1:3000')._fabricCAClient;
+		const caClient = new FabricCAServices('http://10.255.255.1:3000', undefined, undefined, testUtil.newDefaultCryptoSuite())._fabricCAClient;
 		start = Date.now();
 		await caClient.request('GET', '/aMethod', signingIdentity);
 		t.fail('Should throw error by CONNECTION_TIMEOUT');
@@ -518,7 +515,7 @@ async function timeOutTest(signingIdentity, t) {
 
 	// test SO_TIMEOUT
 	try {
-		const caClient = new FabricCAServices('http://localhost:3000')._fabricCAClient;
+		const caClient = new FabricCAServices('http://localhost:3000', undefined, undefined, testUtil.newDefaultCryptoSuite())._fabricCAClient;
 		start = Date.now();
 		await caClient.request('GET', '/aMethod', signingIdentity);
 		t.fail('Should throw error by SO_TIMEOUT');

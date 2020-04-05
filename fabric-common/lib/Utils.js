@@ -63,7 +63,7 @@ function getHsmCryptoSuiteImpl() {
  * - newCryptoSuite({software: false, lib: '/usr/local/bin/pkcs11.so', slot: 0, pin: '1234'})
  * - newCryptoSuite({keysize: 384})
  * - newCryptoSuite()
- * @param {Object} setting This optional parameter is an object with the following optional properties:
+ * @param {Object} [setting] This optional parameter is an object with the following optional properties:
  *    - software {boolean}: Whether to load a software-based implementation (true) or HSM implementation (false)
  *        default is true (for software based implementation), specific implementation module is specified
  *        in the setting 'crypto-suite-software'
@@ -118,8 +118,8 @@ module.exports.newCryptoSuite = (setting) => {
 	return new cryptoSuite(keysize, hashAlgo, opts);
 };
 
-// Provide a keyValueStore for couchdb, etc.
-module.exports.newKeyValueStore = async (options) => {
+// Provide an in-memory keyValueStore
+module.exports.newKeyValueStore = (options) => {
 	return new InMemoryKeyValueStore();
 };
 
@@ -447,26 +447,15 @@ module.exports.getDefaultKeyStorePath = () => {
 	return path.join(os.homedir(), '.hfc-key-store');
 };
 
-const CryptoKeyStore = function (KVSImplClass, opts) {
-	let store;
-
-	this._getKeyStore = async function () {
-		if (!store) {
-			const newInstance = require('./impl/CryptoKeyStore');
-			store = await newInstance(KVSImplClass, opts);
-			await store.initialize();
-		}
-
-		return store;
-	};
-};
-
-module.exports.newCryptoKeyStore = (KVSImplClass, opts) => {
-	// this function supports skipping any of the arguments such that it can be called in any of the following fashions:
-	// - newCryptoKeyStore(CouchDBKeyValueStore, {name: 'member_db', url: 'http://localhost:5984'})
-	// - newCryptoKeyStore({path: '/tmp/app-state-store'})
-	// - newCryptoKeyStore()
-	return new CryptoKeyStore(KVSImplClass, opts);
+/**
+ *
+ * @param {KeyValueStore} [keyValueStore] Optional. The built-in key store saves private keys.
+ *    The key store must be instance of any {@link KeyValueStore} implementations.
+ * @return {CryptoKeyStore}
+ */
+module.exports.newCryptoKeyStore = (keyValueStore = new InMemoryKeyValueStore()) => {
+	const CryptoKeyStore = require('./impl/CryptoKeyStore');
+	return new CryptoKeyStore(keyValueStore);
 };
 
 /*
@@ -511,7 +500,7 @@ module.exports.normalizeX509 = (raw) => {
 
 	// make sure '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----' are in their own lines
 	// and that it ends in a new line
-	let result =  matches.join('\n') + '\n';
+	let result = matches.join('\n') + '\n';
 
 	// could be this has multiple certs within
 	const regex2 = /----------/;

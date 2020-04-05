@@ -43,7 +43,7 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		it('should generate a public key with the correct curveName', async () => {
 			const cryptoSuite = Utils.newCryptoSuite();
-			cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+			cryptoSuite.setCryptoKeyStore(await Utils.newCryptoKeyStore());
 			const key = await cryptoSuite.generateKey();
 			key.should.be.an.instanceOf(ECDSAKey);
 			const curveName = key.getPublicKey()._key.curveName;
@@ -52,7 +52,7 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		it('should generate a public key with the correct curveName for non-default 384 keysize', async () => {
 			const cryptoSuite = Utils.newCryptoSuite({keysize: 384});
-			cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+			cryptoSuite.setCryptoKeyStore(await Utils.newCryptoKeyStore());
 			const key = await cryptoSuite.generateKey();
 			const curveName = key.getPublicKey()._key.curveName;
 			curveName.should.equal(curveName384String);
@@ -60,7 +60,7 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		it('should generate an ephemeral key when specified', async () => {
 			const cryptoSuite = Utils.newCryptoSuite();
-			cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+			cryptoSuite.setCryptoKeyStore(await Utils.newCryptoKeyStore());
 			const key = await cryptoSuite.generateKey({ephemeral: true});
 			key.should.be.an.instanceOf(ECDSAKey);
 			const curveName = key.getPublicKey()._key.curveName;
@@ -97,7 +97,7 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		it('should return a public key', async () => {
 			const cryptoSuite = Utils.newCryptoSuite();
-			cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+			cryptoSuite.setCryptoKeyStore(await Utils.newCryptoKeyStore());
 			const key = await cryptoSuite.importKey(testUtils.certificateAsPEM);
 			key.isPrivate().should.equal(false);
 			key.getSKI().should.equal(testUtils.TEST_PUBLIC_KEY_SKI);
@@ -105,18 +105,17 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		it('should store the imported public key in the key store', async () => {
 			const cryptoSuite = Utils.newCryptoSuite();
-			const keyStore = Utils.newCryptoKeyStore();
+			const keyStore = await Utils.newCryptoKeyStore();
 			cryptoSuite.setCryptoKeyStore(keyStore);
 			await cryptoSuite.importKey(testUtils.certificateAsPEM);
 
-			const realKeyStore = await keyStore._getKeyStore();
-			const cert = realKeyStore.getValue('f7b61538c52260e83cf4f2693d11019f73e7495056c5b54f1e05bae80e9402a7-pub');
+			const cert = await keyStore.getValue('f7b61538c52260e83cf4f2693d11019f73e7495056c5b54f1e05bae80e9402a7-pub');
 			cert.should.exist;
 		});
 
 		it('should return a private key', async () => {
 			const cryptoSuite = Utils.newCryptoSuite();
-			cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+			cryptoSuite.setCryptoKeyStore(await Utils.newCryptoKeyStore());
 			const key = await cryptoSuite.importKey(testUtils.keyAsPEM);
 			key.isPrivate().should.equal(true);
 			key.getSKI().should.equal(testUtils.TEST_PRIVATE_KEY_SKI);
@@ -124,12 +123,11 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		it('should store the imported private key in the correct directory', async () => {
 			const cryptoSuite = Utils.newCryptoSuite();
-			const keyStore = Utils.newCryptoKeyStore();
+			const keyStore = await Utils.newCryptoKeyStore();
 			cryptoSuite.setCryptoKeyStore(keyStore);
 			await cryptoSuite.importKey(testUtils.keyAsPEM);
 
-			const realKeyStore = await keyStore._getKeyStore();
-			const key = realKeyStore.getValue('bced195e7aacb5705bbad45598535d2f41564953680c5cf696becbb2dfebf39c-priv');
+			const key = await keyStore.getValue('bced195e7aacb5705bbad45598535d2f41564953680c5cf696becbb2dfebf39c-priv');
 			key.should.exist;
 		});
 
@@ -212,7 +210,7 @@ describe('CryptoSuite_ECDSA_AES', () => {
 
 		beforeEach(async () => {
 			cryptoSuite = Utils.newCryptoSuite();
-			cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+			cryptoSuite.setCryptoKeyStore(await Utils.newCryptoKeyStore());
 			key = await cryptoSuite.generateKey();
 		});
 

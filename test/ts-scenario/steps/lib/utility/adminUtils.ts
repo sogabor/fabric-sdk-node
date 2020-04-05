@@ -4,11 +4,11 @@
 
 'use strict';
 
-import { Constants } from '../../constants';
-import * as Chaincode from '../chaincode';
+import {Constants} from '../../constants';
 import * as BaseUtils from './baseUtils';
-import { CommonConnectionProfileHelper } from './commonConnectionProfileHelper';
-import { StateStore } from './stateStore';
+import {ICryptoSuite, Utils} from 'fabric-common';
+import {CommonConnectionProfileHelper} from './commonConnectionProfileHelper';
+import {StateStore} from './stateStore';
 
 import * as FabricCAServices from 'fabric-ca-client';
 import * as Client from 'fabric-client';
@@ -16,6 +16,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const stateStore: StateStore = StateStore.getInstance();
+export const newDefaultCryptoSuite = () => {
+	const cryptoSuite: ICryptoSuite = Utils.newCryptoSuite();
+	cryptoSuite.setCryptoKeyStore(Utils.newCryptoKeyStore());
+	return cryptoSuite;
+};
 
 /**
  * Enroll and get the cert
@@ -28,7 +33,7 @@ export async function tlsEnroll(fabricCAEndpoint: string, caName: string): Promi
 		trustedRoots: [],
 		verify: false,
 	};
-	const caService: FabricCAServices = new FabricCAServices(fabricCAEndpoint, tlsOptions as any, caName);
+	const caService: FabricCAServices = new FabricCAServices(fabricCAEndpoint, tlsOptions as any, caName, newDefaultCryptoSuite());
 	const req: any = {
 		enrollmentID: 'admin',
 		enrollmentSecret: 'adminpw',
@@ -36,7 +41,7 @@ export async function tlsEnroll(fabricCAEndpoint: string, caName: string): Promi
 	};
 
 	const enrollment: any = await caService.enroll(req);
-	enrollment.key  = enrollment.key.toBytes();
+	enrollment.key = enrollment.key.toBytes();
 	return enrollment;
 }
 
@@ -124,9 +129,13 @@ async function getMember(username: string, password: string, client: Client, use
 			trustedRoots: [],
 			verify: false,
 		};
-		const cop: FabricCAServices = new FabricCAServices(caUrl, tlsOptions as any, org.ca.name);
 
-		const enrollment: FabricCAServices.IEnrollResponse = await cop.enroll({enrollmentID: username, enrollmentSecret: password});
+		const cop: FabricCAServices = new FabricCAServices(caUrl, tlsOptions as any, org.ca.name, newDefaultCryptoSuite());
+
+		const enrollment: FabricCAServices.IEnrollResponse = await cop.enroll({
+			enrollmentID: username,
+			enrollmentSecret: password
+		});
 
 		await member.setEnrollment(enrollment.key, enrollment.certificate, org.mspid);
 
@@ -210,7 +219,7 @@ export async function isOrgChaincodeInstalled(orgName: string, ccp: CommonConnec
 	// loop over message array if present
 	let hasInstalled: boolean = false;
 	for (const chaincode of message.chaincodes) {
-		if ( (chaincode.name.localeCompare(chaincodeName) === 0) && (chaincode.version.localeCompare(chaincodeVersion) === 0)) {
+		if ((chaincode.name.localeCompare(chaincodeName) === 0) && (chaincode.version.localeCompare(chaincodeVersion) === 0)) {
 			hasInstalled = true;
 			break;
 		}
@@ -313,7 +322,7 @@ export async function isChaincodeInstantiatedOnChannel(orgName: string, ccp: Com
 	// loop over message array if present
 	let isInstantiated: boolean = false;
 	for (const chaincode of message.chaincodes) {
-		if ( (chaincode.name.localeCompare(chaincodeName) === 0) && (chaincode.version.localeCompare(chaincodeVersion) === 0)) {
+		if ((chaincode.name.localeCompare(chaincodeName) === 0) && (chaincode.version.localeCompare(chaincodeVersion) === 0)) {
 			isInstantiated = true;
 			break;
 		}

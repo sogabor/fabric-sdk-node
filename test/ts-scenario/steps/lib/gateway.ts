@@ -272,7 +272,7 @@ async function createHSMUser(wallet: Wallet, ccp: CommonConnectionProfileHelper,
 	const hsmProvider: IdentityProvider = wallet.getProviderRegistry().getProvider(HSM_PROVIDER);
 	const hsmCAClient = new FabricCAClient(fabricCAEndpoint, tlsOptions, caName, hsmProvider.getCryptoSuite());
 	const provider: IdentityProvider = wallet.getProviderRegistry().getProvider(X509_PROVIDER);
-	const caClient = new FabricCAClient(fabricCAEndpoint, tlsOptions, caName);
+	const caClient = new FabricCAClient(fabricCAEndpoint, tlsOptions, caName, AdminUtils.newDefaultCryptoSuite());
 
 	// first setup the admin user
 	const adminName: string = `admin@${orgName}`;

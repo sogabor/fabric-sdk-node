@@ -231,3 +231,8 @@ module.exports.getSubmitter = function(client, test, peerOrgAdmin, org) {
 module.exports.sleep = function(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 };
+module.exports.newDefaultCryptoSuite = () => {
+	const cryptoSuite = utils.newCryptoSuite();
+	cryptoSuite.setCryptoKeyStore(utils.newCryptoKeyStore());
+	return cryptoSuite;
+};

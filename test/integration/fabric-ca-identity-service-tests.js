@@ -10,9 +10,8 @@ const test = _test(tape);
 const path = require('path');
 const FabricCAServices = require('../../fabric-ca-client');
 const {HFCAIdentityAttributes, HFCAIdentityType} = require('../../fabric-ca-client/lib/IdentityService');
-
 const {User} = require('fabric-common');
-
+const {newDefaultCryptoSuite} = require('./util');
 const userOrg1 = 'org1';
 const userOrg2 = 'org2';
 const tlsOptions = {
@@ -33,8 +32,9 @@ test('\n\n ** FabricCAServices - IdentityService Test **\n\n', async (t) => {
 	FabricCAServices.getConfigSetting('crypto-keysize', '256'); // force for npm test
 	FabricCAServices.setConfigSetting('crypto-hash-algo', 'SHA2'); // force for npm test
 
-	const caService1 = new FabricCAServices(fabricCAEndpoint1, tlsOptions, ORGS[userOrg1].ca.name);
-	const caService2 = new FabricCAServices(fabricCAEndpoint2, tlsOptions, ORGS[userOrg2].ca.name);
+
+	const caService1 = new FabricCAServices(fabricCAEndpoint1, tlsOptions, ORGS[userOrg1].ca.name, newDefaultCryptoSuite());
+	const caService2 = new FabricCAServices(fabricCAEndpoint2, tlsOptions, ORGS[userOrg2].ca.name, newDefaultCryptoSuite());
 
 	const adminName = 'admin';
 	const userName = 'user_' + Math.random().toFixed(3).slice(2);

@@ -100,7 +100,7 @@ describe('FabricCAServices', () => {
 			callArgs[0].should.be.deep.equal(cryptoPrimitives);
 		});
 
-		it('should create a new crypto suite and store if none passed', () => {
+		it('should throw if no crypto suite passed', () => {
 			const setCryptoSuiteStub = sinon.stub();
 			const getCryptoSuiteStub = sinon.stub();
 			const newSuite = sinon.createStubInstance(CryptoSuite);
@@ -109,12 +109,10 @@ describe('FabricCAServices', () => {
 			revert.push(FabricCAServicesRewire.__set__('FabricCAServices.prototype.setCryptoSuite', setCryptoSuiteStub));
 			revert.push(FabricCAServicesRewire.__set__('FabricCAServices.prototype.getCryptoSuite', getCryptoSuiteStub));
 
-			new FabricCAServicesRewire('http://penguin.com', null, 'ca_name');
+			(() => {
+				new FabricCAServicesRewire('http://penguin.com', null, 'ca_name');
+			}).should.throw('Missing required argument "cryptoSuite"');
 
-			// Should be called
-			sinon.assert.calledOnce(setCryptoSuiteStub);
-			sinon.assert.calledTwice(getCryptoSuiteStub);
-			sinon.assert.calledOnce(newSuite.setCryptoKeyStore);
 		});
 
 		it('should create a new FabricCAClient and store within the FabricCAServices object', () => {
@@ -145,47 +143,41 @@ describe('FabricCAServices', () => {
 			service._fabricCAClient = clientMock;
 		});
 
-		it('should throw if missing required argument "request"', () => {
-			(() => {
-				service.register();
-			}).should.throw(/Missing required argument "request"/);
+		it('should throw if missing required argument "request"', async () => {
+			await service.register().should.be.rejectedWith(/Missing required argument "request"/);
 		});
 
-		it('should throw if required argument "request" is null', () => {
-			(() => {
-				service.register(null);
-			}).should.throw(/Missing required argument "request"/);
+		it('should throw if required argument "request" is null', async () => {
+			await service.register(null).should.be.rejectedWith(/Missing required argument "request"/);
 		});
 
-		it('should throw if missing required argument "request.enrollmentID"', () => {
-			(() => {
-				service.register({name: 'bob'});
-			}).should.throw(/Missing required argument "request.enrollmentID"/);
+		it('should throw if missing required argument "request.enrollmentID"', async () => {
+			await service.register({name: 'bob'}).should.be.rejectedWith(/Missing required argument "request.enrollmentID"/);
 		});
 
-		it('should set max enrollments to "1" if req.maxEnrollments is undefined', () => {
-			service.register({enrollmentID: 'bob'}, new User('bob'));
+		it('should set max enrollments to "1" if req.maxEnrollments is undefined', async () => {
+			await service.register({enrollmentID: 'bob'}, new User('bob'));
 			sinon.assert.calledOnce(clientMock.register);
 			clientMock.register.getCall(0).args[4].should.equal(1);
 		});
 
-		it('should set max enrollments to "1" if req.maxEnrollments is null', () => {
-			service.register({enrollmentID: 'bob', maxEnrollments: null}, new User('bob'));
+		it('should set max enrollments to "1" if req.maxEnrollments is null', async () => {
+			await service.register({enrollmentID: 'bob', maxEnrollments: null}, new User('bob'));
 			sinon.assert.calledOnce(clientMock.register);
 			clientMock.register.getCall(0).args[4].should.equal(1);
 		});
 
-		it('should call "checkRegistrar"', () => {
-			service.register({enrollmentID: 'bob', maxEnrollments: null}, new User('bob'));
+		it('should call "checkRegistrar"', async () => {
+			await service.register({enrollmentID: 'bob', maxEnrollments: null}, new User('bob'));
 			sinon.assert.calledOnce(checkRegistrarStub);
 		});
 
-		it('should call the register function on the FabricCAClient object with mapped values', () => {
+		it('should call the register function on the FabricCAClient object with mapped values', async () => {
 
 			const registrar = new User('bob');
 			registrar._signingIdentity = 'myID';
 
-			service.register({
+			await service.register({
 				enrollmentID: 'bob',
 				enrollmentSecret: 'shhh!',
 				maxEnrollments: 7,
@@ -430,39 +422,29 @@ describe('FabricCAServices', () => {
 			service._fabricCAClient = clientMock;
 		});
 
-		it('should throw if missing required argument "currentUser"', () => {
-			(() => {
-				service.reenroll();
-			}).should.throw(/Invalid re-enroll request, missing argument "currentUser"/);
+		it('should throw if missing required argument "currentUser"', async () => {
+			await service.reenroll().should.be.rejectedWith(/Invalid re-enroll request, missing argument "currentUser"/);
 		});
 
-		it('should throw if required argument "currentUser" is not a valid User object', () => {
-			(() => {
-				service.reenroll({bob: 'the_builder'});
-			}).should.throw(/Invalid re-enroll request, "currentUser" is not a valid User object/);
+		it('should throw if required argument "currentUser" is not a valid User object', async () => {
+			await service.reenroll({bob: 'the_builder'}).should.be.rejectedWith(/Invalid re-enroll request, "currentUser" is not a valid User object/);
 		});
 
-		it('should throw if request attributes is specified but not an array', () => {
-			(() => {
-				const user = new User('bob');
-				service.reenroll(user, true);
-			}).should.throw(/Invalid re-enroll request, attr_reqs must be an array of AttributeRequest objects/);
+		it('should throw if request attributes is specified but not an array', async () => {
+			const user = new User('bob');
+			await service.reenroll(user, true).should.be.rejectedWith(/Invalid re-enroll request, attr_reqs must be an array of AttributeRequest objects/);
 		});
 
-		it('should throw if any request attributes are missing a name', () => {
-			(() => {
-				const user = new User('bob');
-				service.reenroll(user, [{name: 'penguin'}, {noname: 'revenge'}]);
-			}).should.throw(/Invalid re-enroll request, attr_reqs object is missing the name of the attribute/);
+		it('should throw if any request attributes are missing a name', async () => {
+			const user = new User('bob');
+			await service.reenroll(user, [{name: 'penguin'}, {noname: 'revenge'}]).should.be.rejectedWith(/Invalid re-enroll request, attr_reqs object is missing the name of the attribute/);
 		});
 
 		it('should throw if unable to parse enrollment certificate', async () => {
-			(() => {
-				const user = sinon.createStubInstance(User);
-				user.getIdentity.resolves({_certificate: null});
-				getSubjectCommonNameStub.throws(new Error('forced error'));
-				service.reenroll(user, [{name: 'penguin'}, {name: 'power'}]);
-			}).should.throw(/Failed to parse the enrollment certificate of the current user for its subject/);
+			const user = sinon.createStubInstance(User);
+			user.getIdentity.resolves({_certificate: null});
+			getSubjectCommonNameStub.throws(new Error('forced error'));
+			await service.reenroll(user, [{name: 'penguin'}, {name: 'power'}]).should.be.rejectedWith(/Failed to parse the enrollment certificate of the current user for its subject/);
 		});
 
 		it('should reject if unable to generate key', async () => {
@@ -575,52 +557,43 @@ describe('FabricCAServices', () => {
 			service._fabricCAClient = clientMock;
 		});
 
-		it('should throw if missing required argument "request"', () => {
-			(() => {
-				service.revoke();
-			}).should.throw(/Missing required argument "request"/);
+		it('should throw if missing required argument "request"', async () => {
+			await service.revoke().should.be.rejectedWith(/Missing required argument "request"/);
 		});
 
-		it('should throw if required argument "request" is null', () => {
-			(() => {
-				service.revoke(null);
-			}).should.throw(/Missing required argument "request"/);
+		it('should throw if required argument "request" is null', async () => {
+			await service.revoke(null).should.be.rejectedWith(/Missing required argument "request"/);
 		});
 
-		it('should throw if no enrollmentID and missing aki', () => {
-			(() => {
-				service.revoke({something: true});
-			}).should.throw(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
+		it('should throw if no enrollmentID and missing aki', async () => {
+			await service.revoke({something: true}).should.be.rejectedWith(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
 		});
 
-		it('should throw if no enrollmentID and aki is an empty string', () => {
-			(() => {
-				service.revoke({aki: ''});
-			}).should.throw(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
+		it('should throw if no enrollmentID and aki is an empty string', async () => {
+			await service.revoke({aki: ''}).should.be.rejectedWith(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
 		});
 
-		it('should throw if no enrollmentID and missing serial', () => {
-			(() => {
-				service.revoke({aki: 'aki'});
-			}).should.throw(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
+		it('should throw if no enrollmentID and missing serial', async () => {
+			await service.revoke({aki: 'aki'}).should.be.rejectedWith(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
 		});
 
-		it('should throw if no enrollmentID and serial is an empty string', () => {
-			(() => {
-				service.revoke({aki: 'aki', serial: ''});
-			}).should.throw(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
+		it('should throw if no enrollmentID and serial is an empty string', async () => {
+			await service.revoke({
+				aki: 'aki',
+				serial: ''
+			}).should.be.rejectedWith(/Enrollment ID is empty, thus both "aki" and "serial" must have non-empty values/);
 		});
 
-		it('should call "checkRegistrar"', () => {
-			service.revoke({enrollmentID: 'bob', aki: 'aki', serial: 'serial'}, new User('bob'));
+		it('should call "checkRegistrar"', async () => {
+			await service.revoke({enrollmentID: 'bob', aki: 'aki', serial: 'serial'}, new User('bob'));
 			sinon.assert.calledOnce(checkRegistrarStub);
 		});
 
-		it('should call the revoke function on the FabricCAClient object with mapped parameters', () => {
+		it('should call the revoke function on the FabricCAClient object with mapped parameters', async () => {
 			const registrar = new User('bob');
 			registrar._signingIdentity = 'myID';
 
-			service.revoke({enrollmentID: 'bob', aki: 'aki', serial: 'serial', reason: 'de-friended'}, registrar);
+			await service.revoke({enrollmentID: 'bob', aki: 'aki', serial: 'serial', reason: 'de-friended'}, registrar);
 
 			// Should call
 			sinon.assert.calledOnce(clientMock.revoke);
@@ -637,11 +610,11 @@ describe('FabricCAServices', () => {
 			callArgs.args[5].should.equal('myID');
 		});
 
-		it('should call the revoke function on the FabricCAClient object with conditional reasoning', () => {
+		it('should call the revoke function on the FabricCAClient object with conditional reasoning', async () => {
 			const registrar = new User('bob');
 			registrar._signingIdentity = 'myID';
 
-			service.revoke({aki: 'aki', serial: 'serial'}, registrar);
+			await service.revoke({aki: 'aki', serial: 'serial'}, registrar);
 
 			// Should call
 			sinon.assert.calledOnce(clientMock.revoke);
@@ -669,27 +642,23 @@ describe('FabricCAServices', () => {
 			service._fabricCAClient = clientMock;
 		});
 
-		it('should throw if missing required argument "request"', () => {
-			(() => {
-				service.generateCRL();
-			}).should.throw(/Missing required argument "request"/);
+		it('should throw if missing required argument "request"', async () => {
+			await service.generateCRL().should.be.rejectedWith(/Missing required argument "request"/);
 		});
 
-		it('should throw if required argument "request" is null', () => {
-			(() => {
-				service.generateCRL(null);
-			}).should.throw(/Missing required argument "request"/);
+		it('should throw if required argument "request" is null', async () => {
+			await service.generateCRL(null).should.be.rejectedWith(/Missing required argument "request"/);
 		});
 
-		it('should call "checkRegistrar"', () => {
+		it('should call "checkRegistrar"', async () => {
 			const registrar = new User('bob');
 			registrar._signingIdentity = 'myID';
 
-			service.generateCRL({}, registrar);
+			await service.generateCRL({}, registrar);
 			sinon.assert.calledOnce(checkRegistrarStub);
 		});
 
-		it('should call the generateCRL function on the FabricCAClient object with the mapped parameters', () => {
+		it('should call the generateCRL function on the FabricCAClient object with the mapped parameters', async () => {
 
 			const testDate = new Date('August 19, 1975 13:15:30');
 			const req = {
@@ -702,7 +671,7 @@ describe('FabricCAServices', () => {
 			const registrar = new User('bob');
 			registrar._signingIdentity = 'myID';
 
-			service.generateCRL(req, registrar);
+			await service.generateCRL(req, registrar);
 
 			sinon.assert.calledOnce(clientMock.generateCRL);
 			const callArgs = clientMock.generateCRL.getCall(0);

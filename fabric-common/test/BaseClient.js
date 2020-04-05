@@ -54,13 +54,13 @@ describe('BaseClient', () => {
 			sandbox.restore();
 		});
 
-		it('should call `sdkUtils.newCryptoKeyStore` with passed parameters and return result', () => {
+		it('should call `sdkUtils.newCryptoKeyStore` with passed parameters and return result', async () => {
 			const sdkUtilsStub = sandbox.stub();
 			const newCryptoKeyStoreStub = sandbox.stub().returns('newCryptoKeyStore');
 			sdkUtilsStub.newCryptoKeyStore = newCryptoKeyStoreStub;
 			BaseClientRewire.__set__('sdkUtils', sdkUtilsStub);
 
-			const result = BaseClientRewire.newCryptoKeyStore('setting');
+			const result = await BaseClientRewire.newCryptoKeyStore('setting');
 
 			result.should.equal('newCryptoKeyStore');
 			sinon.assert.calledOnce(newCryptoKeyStoreStub);
@@ -82,9 +82,8 @@ describe('BaseClient', () => {
 			sdkUtilsStub.newKeyValueStore = newDefaultKeyValueStoreStub;
 			BaseClientRewire.__set__('sdkUtils', sdkUtilsStub);
 
-			const result = await BaseClientRewire.newDefaultKeyValueStore('setting');
+			BaseClientRewire.newDefaultKeyValueStore('setting');
 
-			result.should.equal('newDefaultKeyValueStore');
 			sinon.assert.calledOnce(newDefaultKeyValueStoreStub);
 			sinon.assert.calledWith(newDefaultKeyValueStoreStub, 'setting');
 		});

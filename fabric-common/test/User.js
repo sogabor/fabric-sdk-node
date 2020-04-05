@@ -79,7 +79,7 @@ describe('User', () => {
 		});
 		it('should require a mspid', async () => {
 			const user = new User('user');
-			await user.setEnrollment(key, cert, 'mspid', true);
+			await user.setEnrollment(key, cert, 'mspid');
 		});
 	});
 
@@ -127,12 +127,11 @@ describe('User', () => {
 			};
 			// manufacture an error condition where the private key does not exist for the SKI, and only the public key does
 			const cryptoSuite = Utils.newCryptoSuite();
-			const keyStore = Utils.newCryptoKeyStore();
+			const keyStore = await Utils.newCryptoKeyStore();
 			cryptoSuite.setCryptoKeyStore(keyStore);
 			await cryptoSuite.importKey(cert);
 
-			const realKeyStore = await keyStore._getKeyStore();
-			await realKeyStore.setValue(`${testUserEnrollment.enrollment.signingIdentity}-priv`, undefined);
+			await keyStore.setValue(`${testUserEnrollment.enrollment.signingIdentity}-priv`, undefined);
 
 			const user = new User('admin2');
 			user.setCryptoSuite(cryptoSuite);
